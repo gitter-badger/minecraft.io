@@ -78,6 +78,25 @@ class MinecraftClient extends EventEmitter {
     console.log('kicking ', message.text)
     this._client.write('kick_disconnect', {reason: JSON.stringify(message)});
   }
+  playerJoined(uuid, properties) {
+    this._client.write('player_info', {
+      action: 0,
+      data: [{
+        UUID: uuid,
+        name: properties.name,
+        properties: [],
+        gamemode: properties.gameMode,
+        ping: properties.ping,
+        displayName: properties.displayName
+      }]
+    })
+  }
+  playerLeft(uuid) {
+    this._client.write('player_info', {
+      action: 0,
+      data: [{UUID: uuid}]
+    })
+  }
 
   // Test
   sendMessage(message) {

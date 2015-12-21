@@ -27,13 +27,19 @@ class MinecraftServer extends EventEmitter {
       if(store.find({uuid: client.uuid}).length !== 0) return client.kick({text: 'Clones not allowed'})
       client.doLogin()
       store.add(client.id, client)
-      store.forEach(cl => cl.sendMessage({color: 'yellow', translate: 'multiplayer.player.joined', 'with': [client.userName]}))
+      store.forEach(cl => {
+        cl.sendMessage({color: 'yellow', translate: 'multiplayer.player.joined', 'with': [client.userName]})
+        cl.playerJoined(client.uuid, {displayName: client.userName, name: client.userName, ping: 1000, gameMode: 1})
+      })
       console.log('%s joined the game', client.userName)
       mc.playerCount = store.length
     })
     store.on('chat', (client, message) => {
+      store.forEach(cl => {
+        cl.sendMessage({text: '<' + client.userName + '> ' + message.message})
+        cl.playerLeft(client.uuid)
+      })
       console.log('<' + client.userName + '> ' + message.message)
-      store.forEach(cl => cl.sendMessage({text: '<' + client.userName + '> ' + message.message}))
     })
     store.on('command', (client, command) => {
       if(command.command == 'gamemode') client.gameMode = command.args
