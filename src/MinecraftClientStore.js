@@ -9,9 +9,9 @@ class MinecraftClientStore {
     var clients = this._clients
     var list = Object.keys(clients).map(k => clients[k])
     if(query.id !== undefined)
-      list.forEach((client, key) => {if(client.id !== query.id) delete list[key]})
+      list.forEach((client, key) => {if(client.id !== query.id) list.splice(key, 1)})
     if(query.uuid !== undefined)
-      list.forEach((client, key) => {if(client.uuid !== query.uuid) delete list[key]})
+      list.forEach((client, key) => {if(client.uuid !== query.uuid) list.splice(key, 1)})
     return list
   }
   add(id, client) {
