@@ -5,18 +5,29 @@ class MinecraftClientStore {
     this._clients = {}
     this._listening = {}
   }
-  find(query = {}, callback = () => {}) {
-    if(query.id !== undefined) return callback(null, this.clients[query.id])
-    callback(null, [])
+  find(query = {}) {
+    var clients = this._clients
+    var list = Object.keys(clients).map(k => clients[k])
+    if(query.id !== undefined)
+      list.forEach((client, key) => {if(client.id !== query.id) delete list[key]})
+    if(query.uuid !== undefined)
+      list.forEach((client, key) => {if(client.uuid !== query.uuid) delete list[key]})
+    return list
   }
   add(id, client) {
     if(this._clients[id]) return false;
+    if(this.find({uuid: client.uuid}))
     this._clients[id] = client
+    var self = this
+    client.on('disconnected', () => delete self._clients[id])
     for(var eventName in this._listening)
       if(this._listening.hasOwnProperty(eventName)) this._bindListener(client, eventName);
   }
   get all() {
     return this._clients
+  }
+  get length() {
+    return Object.keys(this._clients).length
   }
   on(eventName, executer) {
     if(!this._listening[eventName]) this._listening[eventName] = [executer]

@@ -6,21 +6,28 @@ const MinecraftClient = require('./MinecraftClient')
 const MinecraftClientStore = require('./MinecraftClientStore')
 
 class MinecraftServer extends EventEmitter {
-  constructor() {
+  constructor(options) {
     super()
     this.server = null
     this.clients = new MinecraftClientStore()
+    this.options = options
   }
   listen(port = 25565, host = '0.0.0.0', callback = () => {}) {
     if(this.server !== null) throw new Error('server already running')
-    var mc = this.server = mcProtocol.createServer({motd: 'Node.JS server', port: port, host: host})
+    this.options.port = port
+    this.options.host = host
+    var mc = this.server = mcProtocol.createServer(this.options)
     var store = this.clients
+    if(this.options.favicon) mc.favicon = this.options.favicon
 
     mc.on('login', user => {
       var client = new MinecraftClient(user, mc)
+      if(store.find({uuid: client.uuid}).length !== 0) return client.kick({text: 'Clones not allowed'})
+      client.doLogin()
       store.add(client.id, client)
       store.forEach(cl => cl.sendMessage({color: 'yellow', translate: 'multiplayer.player.joined', 'with': [client.userName]}))
       console.log('%s joined the game', client.userName)
+      mc.playerCount = store.length
     })
     store.on('chat', (client, message) => {
       console.log('<' + client.userName + '> ' + message.message)
@@ -29,6 +36,14 @@ class MinecraftServer extends EventEmitter {
     store.on('command', (client, command) => {
       if(command.command == 'gamemode') client.gameMode = command.args
     })
+    store.on('disconnected', (client) => {
+      store.forEach(cl => cl.sendMessage({color: 'yellow', translate: 'multiplayer.player.left', 'with': [client.userName]}))
+      console.log('%s left the game', client.userName)
+      mc.playerCount = store.length
+    })
+  }
+  get playerCount() {
+    return this.server.playerCount
   }
 }
 

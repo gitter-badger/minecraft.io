@@ -1,5 +1,3 @@
-"use strict"
-var MinecraftServer = require('./src/MinecraftServer')
-var server = new MinecraftServer()
+const MinecraftServer = require('./src/MinecraftServer')
 
-server.listen(25565)
+module.exports = MinecraftServer

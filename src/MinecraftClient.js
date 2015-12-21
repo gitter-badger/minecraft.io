@@ -10,6 +10,7 @@ class MinecraftClient extends EventEmitter {
     this._server = server
     this.id = client.id
     this.userName = client.username
+    this.uuid = client.uuid
     this._gameMode = 1
 
     client.on('chat', chatMessage => {
@@ -22,10 +23,11 @@ class MinecraftClient extends EventEmitter {
         self.emit('command', command)
       } else self.emit('chat', chatMessage)
     })
-
-    this._login()
+    client.on('end', () => {
+      self.emit('disconnected')
+    })
   }
-  _login() {
+  doLogin() {
     var client = this._client
     var server = this._server
     client.write('login', {
@@ -63,6 +65,10 @@ class MinecraftClient extends EventEmitter {
       italic: true,
       color: 'gray'
     })
+  }
+  kick(message) {
+    console.log('kicking ', message.text)
+    this._client.write('kick_disconnect', {reason: JSON.stringify(message)});
   }
 
   // Test
