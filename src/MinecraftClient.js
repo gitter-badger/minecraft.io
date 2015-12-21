@@ -3,18 +3,19 @@ const EventEmitter = require('events').EventEmitter
 
 class MinecraftClient extends EventEmitter {
   // Private
-  constructor(client, server) {
+  constructor(rawClient, server) {
     super()
     var self = this
-    this._client = client
+    this._client = rawClient
     this._server = server
-    this.id = client.id
-    this.userName = client.username
-    this.uuid = client.uuid
+    this.id = rawClient.id
+    this.userName = this.displayName = rawClient.username
+    this.uuid = rawClient.uuid
+    this.ping = 1
     this._gameMode = 1
     this.pos = {x: 0, y: 0, z: 0}
 
-    client.on('chat', chatMessage => {
+    rawClient.on('chat', chatMessage => {
       if(chatMessage.message.startsWith('/')) {
         var command = {
           command: chatMessage.message.split(' ')[0].split('/')[1],
@@ -24,16 +25,18 @@ class MinecraftClient extends EventEmitter {
         self.emit('command', command)
       } else self.emit('chat', chatMessage)
     })
-    client.on('end', () => {
+    rawClient.on('end', () => {
       self.emit('disconnected')
     })
-    client.on('error', err => console.log(err))
-    client.on('position', (position) => {
+    rawClient.on('error', err => console.log(err, err.stack))
+    rawClient.on('position', (position) => {
       self.pos.x = position.x
       self.pos.y = position.y
       self.pos.z = position.z
     })
   }
+
+  // Public
   doLogin() {
     var client = this._client
     var server = this._server
@@ -57,8 +60,6 @@ class MinecraftClient extends EventEmitter {
     this.pos.y = 60
     this.sendMessage({text: 'Welcome to the Node.JS test server, ' + client.username + '!'})
   }
-
-  // Public
   get gameMode() {
     return this._gameMode
   }
@@ -78,23 +79,29 @@ class MinecraftClient extends EventEmitter {
     console.log('kicking ', message.text)
     this._client.write('kick_disconnect', {reason: JSON.stringify(message)});
   }
-  playerJoined(uuid, properties) {
+  playerJoined(clientsJoining) {
+    var data = [];
+    if(!(clientsJoining instanceof Array)) clientsJoining = [clientsJoining]
+    clientsJoining.forEach(cl => data.push({
+      UUID: cl.uuid,
+      name: cl.userName,
+      properties: [],
+      gamemode: cl.gameMode,
+      ping: cl.ping,
+      displayName: cl.displayName
+    }))
     this._client.write('player_info', {
       action: 0,
-      data: [{
-        UUID: uuid,
-        name: properties.name,
-        properties: [],
-        gamemode: properties.gameMode,
-        ping: properties.ping,
-        displayName: properties.displayName
-      }]
+      data: data
     })
   }
-  playerLeft(uuid) {
+  playerLeft(clientsLeaving) {
+    var data = [];
+    if(!(clientsLeaving instanceof Array)) clientsLeaving = [clientsLeaving]
+    clientsLeaving.forEach(cl => data.push({UUID: cl.uuid}))
     this._client.write('player_info', {
       action: 0,
-      data: [{UUID: uuid}]
+      data: data
     })
   }
 

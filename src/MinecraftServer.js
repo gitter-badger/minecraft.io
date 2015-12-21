@@ -20,25 +20,23 @@ class MinecraftServer extends EventEmitter {
     var store = this.clients
     if(this.options.favicon) mc.favicon = this.options.favicon
 
-    mc.on('login', user => {
-      var client = new MinecraftClient(user, mc)
+    mc.on('login', rawClient => {
+      var client = new MinecraftClient(rawClient, mc)
       store.forEach(cl => console.log('Connected UUID: %s', cl.uuid))
       console.log('Connecting UUID: %s', client.uuid)
-      if(store.find({uuid: client.uuid}).length !== 0) return client.kick({text: 'Clones not allowed'})
+      if(store.find({uuid: client.uuid}).length !== 0) return client.kick({text: 'Your UUID is already registered'})
       client.doLogin()
-      store.add(client.id, client)
       store.forEach(cl => {
         cl.sendMessage({color: 'yellow', translate: 'multiplayer.player.joined', 'with': [client.userName]})
-        cl.playerJoined(client.uuid, {displayName: client.userName, name: client.userName, ping: 1000, gameMode: 1})
+        cl.playerJoined(client)
       })
+      store.add(client.id, client)
+      client.playerJoined(store.array)
       console.log('%s joined the game', client.userName)
       mc.playerCount = store.length
     })
     store.on('chat', (client, message) => {
-      store.forEach(cl => {
-        cl.sendMessage({text: '<' + client.userName + '> ' + message.message})
-        cl.playerLeft(client.uuid)
-      })
+      store.forEach(cl => cl.sendMessage({text: '<' + client.userName + '> ' + message.message}))
       console.log('<' + client.userName + '> ' + message.message)
     })
     store.on('command', (client, command) => {
@@ -46,7 +44,10 @@ class MinecraftServer extends EventEmitter {
       else if(command.command == 'explode') client.explosion()
     })
     store.on('disconnected', (client) => {
-      store.forEach(cl => cl.sendMessage({color: 'yellow', translate: 'multiplayer.player.left', 'with': [client.userName]}))
+      store.forEach(cl => {
+        cl.playerLeft(client)
+        cl.sendMessage({color: 'yellow', translate: 'multiplayer.player.left', 'with': [client.userName]})
+      })
       console.log('%s left the game', client.userName)
       mc.playerCount = store.length
     })

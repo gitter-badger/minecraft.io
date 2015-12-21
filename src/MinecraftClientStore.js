@@ -26,6 +26,10 @@ class MinecraftClientStore {
   get all() {
     return this._clients
   }
+  get array() {
+    var clients = this._clients
+    return Object.keys(clients).map(k => clients[k])
+  }
   get length() {
     return Object.keys(this._clients).length
   }
