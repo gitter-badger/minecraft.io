@@ -22,6 +22,8 @@ class MinecraftServer extends EventEmitter {
 
     mc.on('login', user => {
       var client = new MinecraftClient(user, mc)
+      store.forEach(cl => console.log('Connected UUID: %s', cl.uuid))
+      console.log('Connecting UUID: %s', client.uuid)
       if(store.find({uuid: client.uuid}).length !== 0) return client.kick({text: 'Clones not allowed'})
       client.doLogin()
       store.add(client.id, client)
