@@ -12,6 +12,7 @@ class MinecraftClient extends EventEmitter {
     this.userName = client.username
     this.uuid = client.uuid
     this._gameMode = 1
+    this.pos = {x: 0, y: 0, z: 0}
 
     client.on('chat', chatMessage => {
       if(chatMessage.message.startsWith('/')) {
@@ -25,6 +26,12 @@ class MinecraftClient extends EventEmitter {
     })
     client.on('end', () => {
       self.emit('disconnected')
+    })
+    client.on('error', err => console.log(err))
+    client.on('position', (position) => {
+      self.pos.x = position.x
+      self.pos.y = position.y
+      self.pos.z = position.z
     })
   }
   doLogin() {
@@ -47,6 +54,7 @@ class MinecraftClient extends EventEmitter {
       pitch: 0,
       flags: 0x00
     })
+    this.pos.y = 60
     this.sendMessage({text: 'Welcome to the Node.JS test server, ' + client.username + '!'})
   }
 
@@ -74,6 +82,18 @@ class MinecraftClient extends EventEmitter {
   // Test
   sendMessage(message) {
     this._client.write('chat', {message: JSON.stringify(message), position: 0})
+  }
+  explosion() {
+    var pos = this.pos
+    this._client.write('explosion', {
+      x: pos.x,
+      y: pos.y,
+      z: pos.z,
+      affectedBlockOffsets: [],
+      playerMotionX: 0,
+      playerMotionY: 0,
+      playerMotionZ: 0
+    })
   }
 }
 

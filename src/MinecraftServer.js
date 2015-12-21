@@ -35,6 +35,7 @@ class MinecraftServer extends EventEmitter {
     })
     store.on('command', (client, command) => {
       if(command.command == 'gamemode') client.gameMode = command.args
+      else if(command.command == 'explode') client.explosion()
     })
     store.on('disconnected', (client) => {
       store.forEach(cl => cl.sendMessage({color: 'yellow', translate: 'multiplayer.player.left', 'with': [client.userName]}))
